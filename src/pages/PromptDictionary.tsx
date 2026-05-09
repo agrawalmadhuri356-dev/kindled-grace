@@ -325,6 +325,46 @@ const PromptDictionary = () => {
             )}
           </section>
 
+          {/* About Us */}
+          <section id="about" aria-label="About Us" className="mt-20">
+            <div className="gradient-border rounded-3xl">
+              <div className="glass-strong rounded-3xl p-6 sm:p-10">
+                <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1fr] gap-8 items-center">
+                  <div>
+                    <span className="inline-flex items-center gap-2 glass rounded-full px-3 py-1 text-xs text-pp-muted">
+                      <Sparkles className="h-3.5 w-3.5" /> About PromptDex
+                    </span>
+                    <h2 className="mt-4 text-2xl sm:text-4xl font-extrabold tracking-tight">
+                      Prompts that <span className="gradient-text">actually ship work</span>.
+                    </h2>
+                    <p className="mt-4 text-pp-muted leading-relaxed text-sm sm:text-base">
+                      PromptDex is a curated dictionary of AI prompts for builders, designers, writers and marketers.
+                      Every prompt is tested across leading models, structured for reliable output, and refined by a
+                      community of operators shipping real products.
+                    </p>
+                    <p className="mt-3 text-pp-muted leading-relaxed text-sm sm:text-base">
+                      No fluff, no clickbait — just battle-tested templates you can copy, paste and adapt in seconds.
+                      Free prompts to get you moving, premium ones for the workflows that pay the bills.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    {[
+                      { k: "37+", v: "Curated prompts" },
+                      { k: "4", v: "Core categories" },
+                      { k: "100%", v: "Tested in production" },
+                      { k: "1-tap", v: "Copy & ship" },
+                    ].map((s) => (
+                      <div key={s.v} className="glass rounded-2xl p-4 text-center">
+                        <p className="text-2xl sm:text-3xl font-extrabold gradient-text">{s.k}</p>
+                        <p className="mt-1 text-[11px] sm:text-xs text-pp-muted uppercase tracking-wider">{s.v}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <footer className="mt-16 text-center text-xs text-pp-muted">
             Built for builders. Glassmorphism + gradients · {new Date().getFullYear()}
           </footer>
