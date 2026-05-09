@@ -111,3 +111,66 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* ===== AI Prompt Dictionary — Dark Glassmorphism ===== */
+.prompt-app {
+  --pp-bg: 230 35% 7%;
+  --pp-bg-2: 250 40% 10%;
+  --pp-text: 220 20% 96%;
+  --pp-muted: 230 15% 65%;
+  --pp-blue: 217 91% 60%;
+  --pp-purple: 270 91% 65%;
+  --pp-border: 230 30% 100% / 0.08;
+  --pp-glass: 230 30% 100% / 0.04;
+
+  color: hsl(var(--pp-text));
+  background:
+    radial-gradient(1000px 600px at 10% -10%, hsl(var(--pp-purple) / 0.25), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, hsl(var(--pp-blue) / 0.22), transparent 60%),
+    radial-gradient(700px 400px at 50% 110%, hsl(var(--pp-purple) / 0.18), transparent 60%),
+    linear-gradient(180deg, hsl(var(--pp-bg)) 0%, hsl(var(--pp-bg-2)) 100%);
+  min-height: 100vh;
+}
+.glass {
+  background: hsla(var(--pp-glass));
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid hsla(var(--pp-border));
+}
+.glass-strong {
+  background: linear-gradient(180deg, hsla(230 30% 100% / 0.07), hsla(230 30% 100% / 0.03));
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid hsla(var(--pp-border));
+}
+.text-pp-muted { color: hsl(var(--pp-muted)); }
+.gradient-text {
+  background: linear-gradient(90deg, hsl(var(--pp-blue)), hsl(var(--pp-purple)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.gradient-bg {
+  background: linear-gradient(90deg, hsl(var(--pp-blue)), hsl(var(--pp-purple)));
+}
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, hsl(var(--pp-blue) / 0.7), hsl(var(--pp-purple) / 0.7));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+.prompt-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.prompt-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, hsl(var(--pp-blue) / 0.5), hsl(var(--pp-purple) / 0.5));
+  border-radius: 999px;
+}
+.prompt-scroll::-webkit-scrollbar-track { background: transparent; }
