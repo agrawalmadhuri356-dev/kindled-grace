@@ -153,57 +153,88 @@ const PromptDictionary = () => {
   const [spDescription, setSpDescription] = useState("");
   const [spBody, setSpBody] = useState("");
   const [rating, setRating] = useState(0);
-  const [ratingStats, setRatingStats] = useState<{ sum: number; count: number }>({ sum: 0, count: 0 });
-  const [userRating, setUserRating] = useState<number>(0);
+  const [ratingCategory, setRatingCategory] = useState<Category>("Developer");
+  type CatStats = Record<Category, { sum: number; count: number }>;
+  type CatUser = Record<Category, number>;
+  const emptyStats: CatStats = {
+    Developer: { sum: 0, count: 0 },
+    "UI/UX Design": { sum: 0, count: 0 },
+    "Content Writing": { sum: 0, count: 0 },
+    "Social Media": { sum: 0, count: 0 },
+  };
+  const emptyUser: CatUser = {
+    Developer: 0,
+    "UI/UX Design": 0,
+    "Content Writing": 0,
+    "Social Media": 0,
+  };
+  const [ratingStats, setRatingStats] = useState<CatStats>(emptyStats);
+  const [userRatings, setUserRatings] = useState<CatUser>(emptyUser);
 
   // Load persisted ratings on mount
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("promptdex_ratings");
+      const raw = localStorage.getItem("promptdex_ratings_v2");
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (typeof parsed?.sum === "number" && typeof parsed?.count === "number") {
-          setRatingStats({ sum: parsed.sum, count: parsed.count });
+        const merged = { ...emptyStats };
+        for (const c of CATEGORIES) {
+          if (parsed?.[c] && typeof parsed[c].sum === "number" && typeof parsed[c].count === "number") {
+            merged[c] = { sum: parsed[c].sum, count: parsed[c].count };
+          }
         }
+        setRatingStats(merged);
       }
-      const mine = localStorage.getItem("promptdex_user_rating");
+      const mine = localStorage.getItem("promptdex_user_ratings_v2");
       if (mine) {
-        const n = parseInt(mine, 10);
-        if (n >= 1 && n <= 5) {
-          setUserRating(n);
-          setRating(n);
+        const parsed = JSON.parse(mine);
+        const merged = { ...emptyUser };
+        for (const c of CATEGORIES) {
+          const n = parseInt(parsed?.[c], 10);
+          if (n >= 1 && n <= 5) merged[c] = n;
         }
+        setUserRatings(merged);
       }
     } catch {
       /* ignore */
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const average = ratingStats.count > 0 ? ratingStats.sum / ratingStats.count : 0;
+  // Sync star selector when switching category
+  useEffect(() => {
+    setRating(userRatings[ratingCategory] || 0);
+  }, [ratingCategory, userRatings]);
+
+  const currentStats = ratingStats[ratingCategory];
+  const currentUser = userRatings[ratingCategory];
+  const average = currentStats.count > 0 ? currentStats.sum / currentStats.count : 0;
 
   const submitRating = () => {
     if (rating === 0) {
       toast.error("Please select a rating");
       return;
     }
-    const next =
-      userRating > 0
-        ? { sum: ratingStats.sum - userRating + rating, count: ratingStats.count }
-        : { sum: ratingStats.sum + rating, count: ratingStats.count + 1 };
-    setRatingStats(next);
-    setUserRating(rating);
+    const prev = currentUser;
+    const nextEntry =
+      prev > 0
+        ? { sum: currentStats.sum - prev + rating, count: currentStats.count }
+        : { sum: currentStats.sum + rating, count: currentStats.count + 1 };
+    const nextStats = { ...ratingStats, [ratingCategory]: nextEntry };
+    const nextUser = { ...userRatings, [ratingCategory]: rating };
+    setRatingStats(nextStats);
+    setUserRatings(nextUser);
     try {
-      localStorage.setItem("promptdex_ratings", JSON.stringify(next));
-      localStorage.setItem("promptdex_user_rating", String(rating));
+      localStorage.setItem("promptdex_ratings_v2", JSON.stringify(nextStats));
+      localStorage.setItem("promptdex_user_ratings_v2", JSON.stringify(nextUser));
     } catch {
       /* ignore */
     }
     toast.success(
-      userRating > 0
-        ? `Updated your rating to ${rating} stars`
-        : `Thanks for your ${rating}-star rating!`,
+      prev > 0
+        ? `Updated ${ratingCategory} rating to ${rating} stars`
+        : `Thanks for your ${rating}-star ${ratingCategory} rating!`,
     );
-    setMenuOpen(false);
   };
 
   const openMenu = (v: MenuView = "root") => {
@@ -570,16 +601,30 @@ const PromptDictionary = () => {
 
             {menuView === "rating" && (
               <div className="space-y-4">
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-pp-muted">Category</label>
+                  <select
+                    value={ratingCategory}
+                    onChange={(e) => setRatingCategory(e.target.value as Category)}
+                    className="mt-1 w-full glass rounded-xl px-3 py-2.5 text-sm bg-transparent outline-none focus:ring-2 focus:ring-purple-500/40"
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c} className="bg-slate-900">
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="glass rounded-xl p-4 flex items-center justify-between">
                   <div>
                     <p className="text-2xl font-bold gradient-text leading-none">
-                      {ratingStats.count > 0 ? average.toFixed(1) : "—"}
+                      {currentStats.count > 0 ? average.toFixed(1) : "—"}
                       <span className="text-sm text-pp-muted font-normal"> / 5</span>
                     </p>
                     <p className="text-xs text-pp-muted mt-1">
-                      {ratingStats.count > 0
-                        ? `Based on ${ratingStats.count} rating${ratingStats.count > 1 ? "s" : ""}`
-                        : "No ratings yet — be the first!"}
+                      {currentStats.count > 0
+                        ? `${ratingCategory} · ${currentStats.count} rating${currentStats.count > 1 ? "s" : ""}`
+                        : `No ${ratingCategory} ratings yet — be the first!`}
                     </p>
                   </div>
                   <div className="flex items-center gap-0.5" aria-hidden="true">
@@ -594,10 +639,38 @@ const PromptDictionary = () => {
                     ))}
                   </div>
                 </div>
+                {/* All-category breakdown */}
+                <div className="grid grid-cols-2 gap-2">
+                  {CATEGORIES.map((c) => {
+                    const s = ratingStats[c];
+                    const avg = s.count > 0 ? s.sum / s.count : 0;
+                    const active = c === ratingCategory;
+                    return (
+                      <button
+                        type="button"
+                        key={c}
+                        onClick={() => setRatingCategory(c)}
+                        className={[
+                          "rounded-xl p-3 text-left transition glass",
+                          active ? "ring-2 ring-purple-500/60" : "hover:bg-white/10",
+                        ].join(" ")}
+                      >
+                        <p className="text-[11px] uppercase tracking-wider text-pp-muted truncate">{c}</p>
+                        <p className="mt-1 text-base font-bold">
+                          {s.count > 0 ? avg.toFixed(1) : "—"}
+                          <span className="text-[11px] text-pp-muted font-normal"> / 5</span>
+                        </p>
+                        <p className="text-[10px] text-pp-muted">
+                          {s.count} rating{s.count === 1 ? "" : "s"}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
                 <p className="text-sm text-pp-muted">
-                  {userRating > 0
-                    ? `Your rating: ${userRating} star${userRating > 1 ? "s" : ""}. Tap to update.`
-                    : "Tap a star to rate your experience."}
+                  {currentUser > 0
+                    ? `Your ${ratingCategory} rating: ${currentUser} star${currentUser > 1 ? "s" : ""}. Tap to update.`
+                    : `Tap a star to rate ${ratingCategory}.`}
                 </p>
                 <div className="flex items-center gap-2">
                   {[1, 2, 3, 4, 5].map((n) => (
@@ -620,7 +693,7 @@ const PromptDictionary = () => {
                   onClick={submitRating}
                   className="w-full gradient-bg text-white rounded-xl py-3 text-sm font-semibold shadow-lg shadow-purple-500/25"
                 >
-                  {userRating > 0 ? "Update Rating" : "Submit Rating"}
+                  {currentUser > 0 ? "Update Rating" : "Submit Rating"}
                 </button>
               </div>
             )}
