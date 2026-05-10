@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Search, Copy, Check, Crown, BookOpen, Sparkles, Menu, X,
   MoreVertical, Info, LifeBuoy, Star, Send, ChevronLeft,
@@ -153,6 +153,58 @@ const PromptDictionary = () => {
   const [spDescription, setSpDescription] = useState("");
   const [spBody, setSpBody] = useState("");
   const [rating, setRating] = useState(0);
+  const [ratingStats, setRatingStats] = useState<{ sum: number; count: number }>({ sum: 0, count: 0 });
+  const [userRating, setUserRating] = useState<number>(0);
+
+  // Load persisted ratings on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("promptdex_ratings");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed?.sum === "number" && typeof parsed?.count === "number") {
+          setRatingStats({ sum: parsed.sum, count: parsed.count });
+        }
+      }
+      const mine = localStorage.getItem("promptdex_user_rating");
+      if (mine) {
+        const n = parseInt(mine, 10);
+        if (n >= 1 && n <= 5) {
+          setUserRating(n);
+          setRating(n);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const average = ratingStats.count > 0 ? ratingStats.sum / ratingStats.count : 0;
+
+  const submitRating = () => {
+    if (rating === 0) {
+      toast.error("Please select a rating");
+      return;
+    }
+    const next =
+      userRating > 0
+        ? { sum: ratingStats.sum - userRating + rating, count: ratingStats.count }
+        : { sum: ratingStats.sum + rating, count: ratingStats.count + 1 };
+    setRatingStats(next);
+    setUserRating(rating);
+    try {
+      localStorage.setItem("promptdex_ratings", JSON.stringify(next));
+      localStorage.setItem("promptdex_user_rating", String(rating));
+    } catch {
+      /* ignore */
+    }
+    toast.success(
+      userRating > 0
+        ? `Updated your rating to ${rating} stars`
+        : `Thanks for your ${rating}-star rating!`,
+    );
+    setMenuOpen(false);
+  };
 
   const openMenu = (v: MenuView = "root") => {
     setMenuView(v);
@@ -518,7 +570,35 @@ const PromptDictionary = () => {
 
             {menuView === "rating" && (
               <div className="space-y-4">
-                <p className="text-sm text-pp-muted">Tap a star to rate your experience.</p>
+                <div className="glass rounded-xl p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold gradient-text leading-none">
+                      {ratingStats.count > 0 ? average.toFixed(1) : "—"}
+                      <span className="text-sm text-pp-muted font-normal"> / 5</span>
+                    </p>
+                    <p className="text-xs text-pp-muted mt-1">
+                      {ratingStats.count > 0
+                        ? `Based on ${ratingStats.count} rating${ratingStats.count > 1 ? "s" : ""}`
+                        : "No ratings yet — be the first!"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-0.5" aria-hidden="true">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star
+                        key={n}
+                        className={[
+                          "h-4 w-4",
+                          n <= Math.round(average) ? "fill-amber-300 text-amber-300" : "text-pp-muted",
+                        ].join(" ")}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <p className="text-sm text-pp-muted">
+                  {userRating > 0
+                    ? `Your rating: ${userRating} star${userRating > 1 ? "s" : ""}. Tap to update.`
+                    : "Tap a star to rate your experience."}
+                </p>
                 <div className="flex items-center gap-2">
                   {[1, 2, 3, 4, 5].map((n) => (
                     <button
@@ -537,14 +617,10 @@ const PromptDictionary = () => {
                   ))}
                 </div>
                 <button
-                  onClick={() => {
-                    if (rating === 0) return toast.error("Please select a rating");
-                    toast.success(`Thanks for your ${rating}-star rating!`);
-                    setMenuOpen(false);
-                  }}
+                  onClick={submitRating}
                   className="w-full gradient-bg text-white rounded-xl py-3 text-sm font-semibold shadow-lg shadow-purple-500/25"
                 >
-                  Submit Rating
+                  {userRating > 0 ? "Update Rating" : "Submit Rating"}
                 </button>
               </div>
             )}
