@@ -1,5 +1,8 @@
 import { useMemo, useState } from "react";
-import { Search, Copy, Check, Crown, BookOpen, Sparkles, Menu, X } from "lucide-react";
+import {
+  Search, Copy, Check, Crown, BookOpen, Sparkles, Menu, X,
+  MoreVertical, Info, LifeBuoy, Star, Send, ChevronLeft,
+} from "lucide-react";
 import { toast } from "sonner";
 
 type Category = "Developer" | "UI/UX Design" | "Content Writing" | "Social Media";
@@ -140,6 +143,37 @@ const PromptDictionary = () => {
   const [activeCat, setActiveCat] = useState<Category | "All">("All");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  type MenuView = "root" | "about" | "support" | "rating" | "submit";
+  const [menuView, setMenuView] = useState<MenuView>("root");
+
+  // Submit Prompt form state
+  const [spCategory, setSpCategory] = useState<Category>("Developer");
+  const [spTitle, setSpTitle] = useState("");
+  const [spDescription, setSpDescription] = useState("");
+  const [spBody, setSpBody] = useState("");
+  const [rating, setRating] = useState(0);
+
+  const openMenu = (v: MenuView = "root") => {
+    setMenuView(v);
+    setMenuOpen(true);
+  };
+
+  const handleSubmitPrompt = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!spTitle.trim() || !spDescription.trim() || !spBody.trim()) {
+      toast.error("Please fill title, description and prompt");
+      return;
+    }
+    if (spDescription.trim().length < 20) {
+      toast.error("Description should be at least 20 characters");
+      return;
+    }
+    toast.success("Prompt submitted for review. Thank you!");
+    setSpTitle(""); setSpDescription(""); setSpBody(""); setSpCategory("Developer");
+    setMenuView("root");
+    setMenuOpen(false);
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -189,6 +223,13 @@ const PromptDictionary = () => {
       <header className="sticky top-0 z-30 glass-strong">
         <div className="mx-auto max-w-7xl flex items-center justify-between px-4 sm:px-6 py-3">
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => openMenu("root")}
+              aria-label="Open menu"
+              className="inline-flex items-center justify-center h-9 w-9 rounded-lg glass hover:bg-white/10 transition"
+            >
+              <MoreVertical className="h-5 w-5" />
+            </button>
             <div className="h-9 w-9 rounded-xl gradient-bg flex items-center justify-center shadow-lg shadow-blue-500/20">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
@@ -390,6 +431,180 @@ const PromptDictionary = () => {
               </button>
             </div>
             <SidebarList grouped={grouped} onSelect={scrollToPrompt} />
+          </div>
+        </div>
+      )}
+
+      {/* Left slide-out menu */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-[60]">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setMenuOpen(false)}
+            aria-hidden
+          />
+          <div className="absolute left-0 top-0 h-full w-[88%] max-w-sm glass-strong p-5 overflow-y-auto prompt-scroll animate-in slide-in-from-left">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                {menuView !== "root" && (
+                  <button
+                    onClick={() => setMenuView("root")}
+                    aria-label="Back"
+                    className="rounded-lg glass p-2"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                )}
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-pp-muted">
+                  {menuView === "root" && "Menu"}
+                  {menuView === "about" && "About Us"}
+                  {menuView === "support" && "Support"}
+                  {menuView === "rating" && "Rate PromptDex"}
+                  {menuView === "submit" && "Submit Prompt"}
+                </h2>
+              </div>
+              <button onClick={() => setMenuOpen(false)} aria-label="Close" className="rounded-lg glass p-2">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {menuView === "root" && (
+              <ul className="space-y-2">
+                {[
+                  { k: "about", label: "About Us", icon: Info, desc: "Who we are & our mission" },
+                  { k: "support", label: "Support", icon: LifeBuoy, desc: "Need help? Reach out" },
+                  { k: "rating", label: "Rating", icon: Star, desc: "Rate your experience" },
+                  { k: "submit", label: "Submit Prompt", icon: Send, desc: "Share your best prompt" },
+                ].map((it) => (
+                  <li key={it.k}>
+                    <button
+                      onClick={() => setMenuView(it.k as MenuView)}
+                      className="w-full text-left glass hover:bg-white/10 transition rounded-xl p-4 flex items-center gap-3"
+                    >
+                      <span className="h-9 w-9 rounded-lg gradient-bg flex items-center justify-center shrink-0">
+                        <it.icon className="h-4 w-4 text-white" />
+                      </span>
+                      <span className="flex-1">
+                        <span className="block text-sm font-semibold">{it.label}</span>
+                        <span className="block text-xs text-pp-muted">{it.desc}</span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {menuView === "about" && (
+              <div className="space-y-3 text-sm text-pp-muted leading-relaxed">
+                <p><span className="gradient-text font-semibold">PromptDex</span> is a curated dictionary of AI prompts crafted for developers, designers, writers and marketers.</p>
+                <p>Every prompt is tested across leading models and refined by operators shipping real products. No fluff — just templates that work.</p>
+                <p>Free prompts get you moving. Premium ones power the workflows that pay the bills.</p>
+              </div>
+            )}
+
+            {menuView === "support" && (
+              <div className="space-y-3 text-sm">
+                <p className="text-pp-muted">Have a question, bug or feature request? We typically respond within 24 hours.</p>
+                <a href="mailto:support@promptdex.app" className="block glass rounded-xl p-4 hover:bg-white/10 transition">
+                  <p className="text-xs text-pp-muted uppercase tracking-wider">Email</p>
+                  <p className="font-semibold">support@promptdex.app</p>
+                </a>
+                <a href="https://twitter.com" target="_blank" rel="noreferrer" className="block glass rounded-xl p-4 hover:bg-white/10 transition">
+                  <p className="text-xs text-pp-muted uppercase tracking-wider">Twitter / X</p>
+                  <p className="font-semibold">@promptdex</p>
+                </a>
+              </div>
+            )}
+
+            {menuView === "rating" && (
+              <div className="space-y-4">
+                <p className="text-sm text-pp-muted">Tap a star to rate your experience.</p>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => setRating(n)}
+                      aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`}
+                      className="p-1"
+                    >
+                      <Star
+                        className={[
+                          "h-8 w-8 transition",
+                          n <= rating ? "fill-amber-300 text-amber-300" : "text-pp-muted",
+                        ].join(" ")}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => {
+                    if (rating === 0) return toast.error("Please select a rating");
+                    toast.success(`Thanks for your ${rating}-star rating!`);
+                    setMenuOpen(false);
+                  }}
+                  className="w-full gradient-bg text-white rounded-xl py-3 text-sm font-semibold shadow-lg shadow-purple-500/25"
+                >
+                  Submit Rating
+                </button>
+              </div>
+            )}
+
+            {menuView === "submit" && (
+              <form onSubmit={handleSubmitPrompt} className="space-y-4">
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-pp-muted">Category</label>
+                  <select
+                    value={spCategory}
+                    onChange={(e) => setSpCategory(e.target.value as Category)}
+                    className="mt-1 w-full glass rounded-xl px-3 py-2.5 text-sm bg-transparent outline-none focus:ring-2 focus:ring-purple-500/40"
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c} className="bg-slate-900">
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-pp-muted">Title</label>
+                  <input
+                    value={spTitle}
+                    onChange={(e) => setSpTitle(e.target.value)}
+                    placeholder="e.g. Killer Cold Email Prompt"
+                    className="mt-1 w-full glass rounded-xl px-3 py-2.5 text-sm bg-transparent outline-none placeholder:text-pp-muted/70 focus:ring-2 focus:ring-purple-500/40"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-pp-muted">
+                    Description <span className="text-pp-muted/70 normal-case">(min 20 chars)</span>
+                  </label>
+                  <textarea
+                    value={spDescription}
+                    onChange={(e) => setSpDescription(e.target.value)}
+                    placeholder="Briefly describe what this prompt does and when to use it…"
+                    rows={3}
+                    className="mt-1 w-full glass rounded-xl px-3 py-2.5 text-sm bg-transparent outline-none placeholder:text-pp-muted/70 focus:ring-2 focus:ring-purple-500/40 resize-none"
+                  />
+                  <p className="mt-1 text-[11px] text-pp-muted">{spDescription.trim().length} characters</p>
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-pp-muted">Prompt</label>
+                  <textarea
+                    value={spBody}
+                    onChange={(e) => setSpBody(e.target.value)}
+                    placeholder="Paste the full prompt here…"
+                    rows={6}
+                    className="mt-1 w-full glass rounded-xl px-3 py-2.5 text-sm bg-transparent outline-none placeholder:text-pp-muted/70 focus:ring-2 focus:ring-purple-500/40 resize-none font-mono"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full gradient-bg text-white rounded-xl py-3 text-sm font-semibold shadow-lg shadow-purple-500/25 inline-flex items-center justify-center gap-2"
+                >
+                  <Send className="h-4 w-4" /> Submit Prompt
+                </button>
+              </form>
+            )}
           </div>
         </div>
       )}
