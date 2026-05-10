@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Search, Copy, Check, Crown, BookOpen, Sparkles, Menu, X,
   MoreVertical, Info, LifeBuoy, Star, Send, ChevronLeft,
@@ -153,6 +153,58 @@ const PromptDictionary = () => {
   const [spDescription, setSpDescription] = useState("");
   const [spBody, setSpBody] = useState("");
   const [rating, setRating] = useState(0);
+  const [ratingStats, setRatingStats] = useState<{ sum: number; count: number }>({ sum: 0, count: 0 });
+  const [userRating, setUserRating] = useState<number>(0);
+
+  // Load persisted ratings on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("promptdex_ratings");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed?.sum === "number" && typeof parsed?.count === "number") {
+          setRatingStats({ sum: parsed.sum, count: parsed.count });
+        }
+      }
+      const mine = localStorage.getItem("promptdex_user_rating");
+      if (mine) {
+        const n = parseInt(mine, 10);
+        if (n >= 1 && n <= 5) {
+          setUserRating(n);
+          setRating(n);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const average = ratingStats.count > 0 ? ratingStats.sum / ratingStats.count : 0;
+
+  const submitRating = () => {
+    if (rating === 0) {
+      toast.error("Please select a rating");
+      return;
+    }
+    const next =
+      userRating > 0
+        ? { sum: ratingStats.sum - userRating + rating, count: ratingStats.count }
+        : { sum: ratingStats.sum + rating, count: ratingStats.count + 1 };
+    setRatingStats(next);
+    setUserRating(rating);
+    try {
+      localStorage.setItem("promptdex_ratings", JSON.stringify(next));
+      localStorage.setItem("promptdex_user_rating", String(rating));
+    } catch {
+      /* ignore */
+    }
+    toast.success(
+      userRating > 0
+        ? `Updated your rating to ${rating} stars`
+        : `Thanks for your ${rating}-star rating!`,
+    );
+    setMenuOpen(false);
+  };
 
   const openMenu = (v: MenuView = "root") => {
     setMenuView(v);
