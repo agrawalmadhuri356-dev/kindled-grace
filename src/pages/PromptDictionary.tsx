@@ -153,57 +153,88 @@ const PromptDictionary = () => {
   const [spDescription, setSpDescription] = useState("");
   const [spBody, setSpBody] = useState("");
   const [rating, setRating] = useState(0);
-  const [ratingStats, setRatingStats] = useState<{ sum: number; count: number }>({ sum: 0, count: 0 });
-  const [userRating, setUserRating] = useState<number>(0);
+  const [ratingCategory, setRatingCategory] = useState<Category>("Developer");
+  type CatStats = Record<Category, { sum: number; count: number }>;
+  type CatUser = Record<Category, number>;
+  const emptyStats: CatStats = {
+    Developer: { sum: 0, count: 0 },
+    "UI/UX Design": { sum: 0, count: 0 },
+    "Content Writing": { sum: 0, count: 0 },
+    "Social Media": { sum: 0, count: 0 },
+  };
+  const emptyUser: CatUser = {
+    Developer: 0,
+    "UI/UX Design": 0,
+    "Content Writing": 0,
+    "Social Media": 0,
+  };
+  const [ratingStats, setRatingStats] = useState<CatStats>(emptyStats);
+  const [userRatings, setUserRatings] = useState<CatUser>(emptyUser);
 
   // Load persisted ratings on mount
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("promptdex_ratings");
+      const raw = localStorage.getItem("promptdex_ratings_v2");
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (typeof parsed?.sum === "number" && typeof parsed?.count === "number") {
-          setRatingStats({ sum: parsed.sum, count: parsed.count });
+        const merged = { ...emptyStats };
+        for (const c of CATEGORIES) {
+          if (parsed?.[c] && typeof parsed[c].sum === "number" && typeof parsed[c].count === "number") {
+            merged[c] = { sum: parsed[c].sum, count: parsed[c].count };
+          }
         }
+        setRatingStats(merged);
       }
-      const mine = localStorage.getItem("promptdex_user_rating");
+      const mine = localStorage.getItem("promptdex_user_ratings_v2");
       if (mine) {
-        const n = parseInt(mine, 10);
-        if (n >= 1 && n <= 5) {
-          setUserRating(n);
-          setRating(n);
+        const parsed = JSON.parse(mine);
+        const merged = { ...emptyUser };
+        for (const c of CATEGORIES) {
+          const n = parseInt(parsed?.[c], 10);
+          if (n >= 1 && n <= 5) merged[c] = n;
         }
+        setUserRatings(merged);
       }
     } catch {
       /* ignore */
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const average = ratingStats.count > 0 ? ratingStats.sum / ratingStats.count : 0;
+  // Sync star selector when switching category
+  useEffect(() => {
+    setRating(userRatings[ratingCategory] || 0);
+  }, [ratingCategory, userRatings]);
+
+  const currentStats = ratingStats[ratingCategory];
+  const currentUser = userRatings[ratingCategory];
+  const average = currentStats.count > 0 ? currentStats.sum / currentStats.count : 0;
 
   const submitRating = () => {
     if (rating === 0) {
       toast.error("Please select a rating");
       return;
     }
-    const next =
-      userRating > 0
-        ? { sum: ratingStats.sum - userRating + rating, count: ratingStats.count }
-        : { sum: ratingStats.sum + rating, count: ratingStats.count + 1 };
-    setRatingStats(next);
-    setUserRating(rating);
+    const prev = currentUser;
+    const nextEntry =
+      prev > 0
+        ? { sum: currentStats.sum - prev + rating, count: currentStats.count }
+        : { sum: currentStats.sum + rating, count: currentStats.count + 1 };
+    const nextStats = { ...ratingStats, [ratingCategory]: nextEntry };
+    const nextUser = { ...userRatings, [ratingCategory]: rating };
+    setRatingStats(nextStats);
+    setUserRatings(nextUser);
     try {
-      localStorage.setItem("promptdex_ratings", JSON.stringify(next));
-      localStorage.setItem("promptdex_user_rating", String(rating));
+      localStorage.setItem("promptdex_ratings_v2", JSON.stringify(nextStats));
+      localStorage.setItem("promptdex_user_ratings_v2", JSON.stringify(nextUser));
     } catch {
       /* ignore */
     }
     toast.success(
-      userRating > 0
-        ? `Updated your rating to ${rating} stars`
-        : `Thanks for your ${rating}-star rating!`,
+      prev > 0
+        ? `Updated ${ratingCategory} rating to ${rating} stars`
+        : `Thanks for your ${rating}-star ${ratingCategory} rating!`,
     );
-    setMenuOpen(false);
   };
 
   const openMenu = (v: MenuView = "root") => {
