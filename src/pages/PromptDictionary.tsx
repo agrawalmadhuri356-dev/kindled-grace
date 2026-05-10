@@ -601,16 +601,30 @@ const PromptDictionary = () => {
 
             {menuView === "rating" && (
               <div className="space-y-4">
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-pp-muted">Category</label>
+                  <select
+                    value={ratingCategory}
+                    onChange={(e) => setRatingCategory(e.target.value as Category)}
+                    className="mt-1 w-full glass rounded-xl px-3 py-2.5 text-sm bg-transparent outline-none focus:ring-2 focus:ring-purple-500/40"
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c} className="bg-slate-900">
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="glass rounded-xl p-4 flex items-center justify-between">
                   <div>
                     <p className="text-2xl font-bold gradient-text leading-none">
-                      {ratingStats.count > 0 ? average.toFixed(1) : "—"}
+                      {currentStats.count > 0 ? average.toFixed(1) : "—"}
                       <span className="text-sm text-pp-muted font-normal"> / 5</span>
                     </p>
                     <p className="text-xs text-pp-muted mt-1">
-                      {ratingStats.count > 0
-                        ? `Based on ${ratingStats.count} rating${ratingStats.count > 1 ? "s" : ""}`
-                        : "No ratings yet — be the first!"}
+                      {currentStats.count > 0
+                        ? `${ratingCategory} · ${currentStats.count} rating${currentStats.count > 1 ? "s" : ""}`
+                        : `No ${ratingCategory} ratings yet — be the first!`}
                     </p>
                   </div>
                   <div className="flex items-center gap-0.5" aria-hidden="true">
@@ -625,10 +639,38 @@ const PromptDictionary = () => {
                     ))}
                   </div>
                 </div>
+                {/* All-category breakdown */}
+                <div className="grid grid-cols-2 gap-2">
+                  {CATEGORIES.map((c) => {
+                    const s = ratingStats[c];
+                    const avg = s.count > 0 ? s.sum / s.count : 0;
+                    const active = c === ratingCategory;
+                    return (
+                      <button
+                        type="button"
+                        key={c}
+                        onClick={() => setRatingCategory(c)}
+                        className={[
+                          "rounded-xl p-3 text-left transition glass",
+                          active ? "ring-2 ring-purple-500/60" : "hover:bg-white/10",
+                        ].join(" ")}
+                      >
+                        <p className="text-[11px] uppercase tracking-wider text-pp-muted truncate">{c}</p>
+                        <p className="mt-1 text-base font-bold">
+                          {s.count > 0 ? avg.toFixed(1) : "—"}
+                          <span className="text-[11px] text-pp-muted font-normal"> / 5</span>
+                        </p>
+                        <p className="text-[10px] text-pp-muted">
+                          {s.count} rating{s.count === 1 ? "" : "s"}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
                 <p className="text-sm text-pp-muted">
-                  {userRating > 0
-                    ? `Your rating: ${userRating} star${userRating > 1 ? "s" : ""}. Tap to update.`
-                    : "Tap a star to rate your experience."}
+                  {currentUser > 0
+                    ? `Your ${ratingCategory} rating: ${currentUser} star${currentUser > 1 ? "s" : ""}. Tap to update.`
+                    : `Tap a star to rate ${ratingCategory}.`}
                 </p>
                 <div className="flex items-center gap-2">
                   {[1, 2, 3, 4, 5].map((n) => (
@@ -651,7 +693,7 @@ const PromptDictionary = () => {
                   onClick={submitRating}
                   className="w-full gradient-bg text-white rounded-xl py-3 text-sm font-semibold shadow-lg shadow-purple-500/25"
                 >
-                  {userRating > 0 ? "Update Rating" : "Submit Rating"}
+                  {currentUser > 0 ? "Update Rating" : "Submit Rating"}
                 </button>
               </div>
             )}
