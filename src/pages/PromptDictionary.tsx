@@ -570,7 +570,35 @@ const PromptDictionary = () => {
 
             {menuView === "rating" && (
               <div className="space-y-4">
-                <p className="text-sm text-pp-muted">Tap a star to rate your experience.</p>
+                <div className="glass rounded-xl p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold gradient-text leading-none">
+                      {ratingStats.count > 0 ? average.toFixed(1) : "—"}
+                      <span className="text-sm text-pp-muted font-normal"> / 5</span>
+                    </p>
+                    <p className="text-xs text-pp-muted mt-1">
+                      {ratingStats.count > 0
+                        ? `Based on ${ratingStats.count} rating${ratingStats.count > 1 ? "s" : ""}`
+                        : "No ratings yet — be the first!"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-0.5" aria-hidden="true">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star
+                        key={n}
+                        className={[
+                          "h-4 w-4",
+                          n <= Math.round(average) ? "fill-amber-300 text-amber-300" : "text-pp-muted",
+                        ].join(" ")}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <p className="text-sm text-pp-muted">
+                  {userRating > 0
+                    ? `Your rating: ${userRating} star${userRating > 1 ? "s" : ""}. Tap to update.`
+                    : "Tap a star to rate your experience."}
+                </p>
                 <div className="flex items-center gap-2">
                   {[1, 2, 3, 4, 5].map((n) => (
                     <button
@@ -589,14 +617,10 @@ const PromptDictionary = () => {
                   ))}
                 </div>
                 <button
-                  onClick={() => {
-                    if (rating === 0) return toast.error("Please select a rating");
-                    toast.success(`Thanks for your ${rating}-star rating!`);
-                    setMenuOpen(false);
-                  }}
+                  onClick={submitRating}
                   className="w-full gradient-bg text-white rounded-xl py-3 text-sm font-semibold shadow-lg shadow-purple-500/25"
                 >
-                  Submit Rating
+                  {userRating > 0 ? "Update Rating" : "Submit Rating"}
                 </button>
               </div>
             )}
