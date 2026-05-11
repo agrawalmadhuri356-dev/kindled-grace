@@ -378,6 +378,11 @@ const PromptDictionary = () => {
         </div>
       </header>
 
+      {/* Top banner ad — sits directly under the header */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-4">
+        <AdSlot variant="banner" />
+      </div>
+
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 lg:py-12 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
         {/* Sidebar — desktop */}
         <aside className="hidden lg:block">
