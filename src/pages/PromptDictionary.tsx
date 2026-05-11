@@ -454,6 +454,33 @@ const PromptDictionary = () => {
                 );
               })}
             </div>
+
+            {/* A–Z jump bar — quickly scroll to prompts starting with a letter */}
+            <nav
+              aria-label="Jump to letter"
+              className="mt-6 glass rounded-2xl px-2 py-2 flex flex-wrap justify-center gap-1"
+            >
+              {ALPHABET.map((letter) => {
+                const enabled = availableLetters.has(letter);
+                return (
+                  <button
+                    key={letter}
+                    type="button"
+                    onClick={() => enabled && jumpToLetter(letter)}
+                    disabled={!enabled}
+                    aria-label={`Jump to prompts starting with ${letter}`}
+                    className={[
+                      "h-7 w-7 rounded-md text-[11px] font-semibold transition",
+                      enabled
+                        ? "text-white hover:bg-white/10"
+                        : "text-pp-muted/40 cursor-not-allowed",
+                    ].join(" ")}
+                  >
+                    {letter}
+                  </button>
+                );
+              })}
+            </nav>
           </section>
 
           {/* Cards */}
@@ -461,7 +488,13 @@ const PromptDictionary = () => {
             aria-label="Prompts"
             className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5"
           >
-            {filtered.map((p) => (
+            {filtered.map((p, idx) => {
+              // Average rating for this prompt's category (shared across the
+              // category — see Rating panel for per-category storage).
+              const cs = ratingStats[p.category];
+              const catAvg = cs.count > 0 ? cs.sum / cs.count : 0;
+              return (
+              <>
               <article
                 id={`prompt-${p.id}`}
                 key={p.id}
@@ -469,11 +502,26 @@ const PromptDictionary = () => {
               >
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <span className="text-[11px] uppercase tracking-wider text-pp-muted">{p.category}</span>
-                  {p.premium && (
-                    <span className="inline-flex items-center gap-1 rounded-full gradient-bg text-white text-[10px] font-semibold px-2 py-0.5">
-                      <Crown className="h-3 w-3" /> Premium
+                  <div className="flex items-center gap-1.5">
+                    {/* Category average rating badge */}
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full glass-strong text-[10px] font-semibold px-2 py-0.5"
+                      title={`${p.category} average · ${cs.count} rating${cs.count === 1 ? "" : "s"}`}
+                    >
+                      <Star
+                        className={[
+                          "h-3 w-3",
+                          cs.count > 0 ? "fill-amber-300 text-amber-300" : "text-pp-muted",
+                        ].join(" ")}
+                      />
+                      {cs.count > 0 ? catAvg.toFixed(1) : "—"}
                     </span>
-                  )}
+                    {p.premium && (
+                      <span className="inline-flex items-center gap-1 rounded-full gradient-bg text-white text-[10px] font-semibold px-2 py-0.5">
+                        <Crown className="h-3 w-3" /> Premium
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <h3 className="text-[17px] font-semibold leading-snug">{p.title}</h3>
                 <p className="mt-2 text-sm text-pp-muted leading-relaxed flex-1">{p.description}</p>
@@ -492,7 +540,13 @@ const PromptDictionary = () => {
                   )}
                 </button>
               </article>
-            ))}
+              {/* In-feed ad after every 5 prompt cards */}
+              {(idx + 1) % 5 === 0 && idx !== filtered.length - 1 && (
+                <AdSlot key={`ad-${idx}`} variant="in-feed" />
+              )}
+              </>
+              );
+            })}
 
             {filtered.length === 0 && (
               <div className="col-span-full glass rounded-2xl p-10 text-center text-pp-muted">
