@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
-  Search, Copy, Check, Crown, BookOpen, Sparkles, Menu, X,
+  Search, Copy, Check, Crown, BookOpen, Sparkles, X,
   MoreVertical, Info, LifeBuoy, Star, Send, ChevronLeft,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -17,6 +17,39 @@ type Prompt = {
 };
 
 const CATEGORIES: Category[] = ["Developer", "UI/UX Design", "Content Writing", "Social Media"];
+
+// Full A–Z list used by the alphabetical jump bar. Letters with no prompts
+// are rendered disabled so the bar layout stays consistent.
+const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+/**
+ * AdSlot — a clearly-labelled placeholder container for monetization.
+ * Replace the inner content with your ad-network snippet (AdSense, Carbon,
+ * EthicalAds, etc.). Rendered with a subtle dashed border so it's obviously
+ * an ad placement during development and review.
+ */
+const AdSlot = ({ variant = "in-feed" }: { variant?: "banner" | "in-feed" }) => (
+  <div
+    role="complementary"
+    aria-label="Advertisement"
+    className={[
+      "border border-dashed border-white/15 rounded-2xl bg-white/[0.02]",
+      "flex items-center justify-center text-center",
+      variant === "banner"
+        ? "w-full px-4 py-4 sm:py-5 min-h-[90px]"
+        : "col-span-full px-4 py-6 min-h-[120px]",
+    ].join(" ")}
+  >
+    <div>
+      <p className="text-[10px] uppercase tracking-[0.2em] text-pp-muted">
+        Advertisement
+      </p>
+      <p className="mt-1 text-xs text-pp-muted/70">
+        {variant === "banner" ? "728×90 / responsive ad slot" : "In-feed sponsored slot"}
+      </p>
+    </div>
+  </div>
+);
 
 const PROMPTS: Prompt[] = [
   {
@@ -300,6 +333,20 @@ const PromptDictionary = () => {
     setSidebarOpen(false);
   };
 
+  // Set of starting letters present in the currently filtered list — used to
+  // enable/disable buttons in the A–Z jump bar.
+  const availableLetters = useMemo(() => {
+    const s = new Set<string>();
+    filtered.forEach((p) => s.add(p.title[0].toUpperCase()));
+    return s;
+  }, [filtered]);
+
+  // Jump to the first visible prompt that starts with the given letter.
+  const jumpToLetter = (letter: string) => {
+    const target = filtered.find((p) => p.title[0].toUpperCase() === letter);
+    if (target) scrollToPrompt(target.id);
+  };
+
   return (
     <div className="prompt-app font-sans">
       {/* Top bar */}
@@ -330,6 +377,11 @@ const PromptDictionary = () => {
           </button>
         </div>
       </header>
+
+      {/* Top banner ad — sits directly under the header */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-4">
+        <AdSlot variant="banner" />
+      </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 lg:py-12 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
         {/* Sidebar — desktop */}
@@ -402,6 +454,33 @@ const PromptDictionary = () => {
                 );
               })}
             </div>
+
+            {/* A–Z jump bar — quickly scroll to prompts starting with a letter */}
+            <nav
+              aria-label="Jump to letter"
+              className="mt-6 glass rounded-2xl px-2 py-2 flex flex-wrap justify-center gap-1"
+            >
+              {ALPHABET.map((letter) => {
+                const enabled = availableLetters.has(letter);
+                return (
+                  <button
+                    key={letter}
+                    type="button"
+                    onClick={() => enabled && jumpToLetter(letter)}
+                    disabled={!enabled}
+                    aria-label={`Jump to prompts starting with ${letter}`}
+                    className={[
+                      "h-7 w-7 rounded-md text-[11px] font-semibold transition",
+                      enabled
+                        ? "text-white hover:bg-white/10"
+                        : "text-pp-muted/40 cursor-not-allowed",
+                    ].join(" ")}
+                  >
+                    {letter}
+                  </button>
+                );
+              })}
+            </nav>
           </section>
 
           {/* Cards */}
@@ -409,19 +488,39 @@ const PromptDictionary = () => {
             aria-label="Prompts"
             className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5"
           >
-            {filtered.map((p) => (
+            {filtered.map((p, idx) => {
+              // Average rating for this prompt's category (shared across the
+              // category — see Rating panel for per-category storage).
+              const cs = ratingStats[p.category];
+              const catAvg = cs.count > 0 ? cs.sum / cs.count : 0;
+              return (
+              <Fragment key={p.id}>
               <article
                 id={`prompt-${p.id}`}
-                key={p.id}
                 className="glass rounded-2xl p-5 flex flex-col transition hover:-translate-y-0.5 hover:border-white/20 ring-purple-500/60"
               >
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <span className="text-[11px] uppercase tracking-wider text-pp-muted">{p.category}</span>
-                  {p.premium && (
-                    <span className="inline-flex items-center gap-1 rounded-full gradient-bg text-white text-[10px] font-semibold px-2 py-0.5">
-                      <Crown className="h-3 w-3" /> Premium
+                  <div className="flex items-center gap-1.5">
+                    {/* Category average rating badge */}
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full glass-strong text-[10px] font-semibold px-2 py-0.5"
+                      title={`${p.category} average · ${cs.count} rating${cs.count === 1 ? "" : "s"}`}
+                    >
+                      <Star
+                        className={[
+                          "h-3 w-3",
+                          cs.count > 0 ? "fill-amber-300 text-amber-300" : "text-pp-muted",
+                        ].join(" ")}
+                      />
+                      {cs.count > 0 ? catAvg.toFixed(1) : "—"}
                     </span>
-                  )}
+                    {p.premium && (
+                      <span className="inline-flex items-center gap-1 rounded-full gradient-bg text-white text-[10px] font-semibold px-2 py-0.5">
+                        <Crown className="h-3 w-3" /> Premium
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <h3 className="text-[17px] font-semibold leading-snug">{p.title}</h3>
                 <p className="mt-2 text-sm text-pp-muted leading-relaxed flex-1">{p.description}</p>
@@ -440,7 +539,13 @@ const PromptDictionary = () => {
                   )}
                 </button>
               </article>
-            ))}
+              {/* In-feed ad after every 5 prompt cards */}
+              {(idx + 1) % 5 === 0 && idx !== filtered.length - 1 && (
+                <AdSlot variant="in-feed" />
+              )}
+              </Fragment>
+              );
+            })}
 
             {filtered.length === 0 && (
               <div className="col-span-full glass rounded-2xl p-10 text-center text-pp-muted">
