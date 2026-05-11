@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Search, Copy, Check, Crown, BookOpen, Sparkles, Menu, X,
+  Search, Copy, Check, Crown, BookOpen, Sparkles, X,
   MoreVertical, Info, LifeBuoy, Star, Send, ChevronLeft,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -17,6 +17,39 @@ type Prompt = {
 };
 
 const CATEGORIES: Category[] = ["Developer", "UI/UX Design", "Content Writing", "Social Media"];
+
+// Full A–Z list used by the alphabetical jump bar. Letters with no prompts
+// are rendered disabled so the bar layout stays consistent.
+const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+/**
+ * AdSlot — a clearly-labelled placeholder container for monetization.
+ * Replace the inner content with your ad-network snippet (AdSense, Carbon,
+ * EthicalAds, etc.). Rendered with a subtle dashed border so it's obviously
+ * an ad placement during development and review.
+ */
+const AdSlot = ({ variant = "in-feed" }: { variant?: "banner" | "in-feed" }) => (
+  <div
+    role="complementary"
+    aria-label="Advertisement"
+    className={[
+      "border border-dashed border-white/15 rounded-2xl bg-white/[0.02]",
+      "flex items-center justify-center text-center",
+      variant === "banner"
+        ? "w-full px-4 py-4 sm:py-5 min-h-[90px]"
+        : "col-span-full px-4 py-6 min-h-[120px]",
+    ].join(" ")}
+  >
+    <div>
+      <p className="text-[10px] uppercase tracking-[0.2em] text-pp-muted">
+        Advertisement
+      </p>
+      <p className="mt-1 text-xs text-pp-muted/70">
+        {variant === "banner" ? "728×90 / responsive ad slot" : "In-feed sponsored slot"}
+      </p>
+    </div>
+  </div>
+);
 
 const PROMPTS: Prompt[] = [
   {
