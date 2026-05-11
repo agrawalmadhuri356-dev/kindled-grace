@@ -333,6 +333,20 @@ const PromptDictionary = () => {
     setSidebarOpen(false);
   };
 
+  // Set of starting letters present in the currently filtered list — used to
+  // enable/disable buttons in the A–Z jump bar.
+  const availableLetters = useMemo(() => {
+    const s = new Set<string>();
+    filtered.forEach((p) => s.add(p.title[0].toUpperCase()));
+    return s;
+  }, [filtered]);
+
+  // Jump to the first visible prompt that starts with the given letter.
+  const jumpToLetter = (letter: string) => {
+    const target = filtered.find((p) => p.title[0].toUpperCase() === letter);
+    if (target) scrollToPrompt(target.id);
+  };
+
   return (
     <div className="prompt-app font-sans">
       {/* Top bar */}
