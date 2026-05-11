@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   Search, Copy, Check, Crown, BookOpen, Sparkles, X,
   MoreVertical, Info, LifeBuoy, Star, Send, ChevronLeft,
@@ -494,10 +494,9 @@ const PromptDictionary = () => {
               const cs = ratingStats[p.category];
               const catAvg = cs.count > 0 ? cs.sum / cs.count : 0;
               return (
-              <>
+              <Fragment key={p.id}>
               <article
                 id={`prompt-${p.id}`}
-                key={p.id}
                 className="glass rounded-2xl p-5 flex flex-col transition hover:-translate-y-0.5 hover:border-white/20 ring-purple-500/60"
               >
                 <div className="flex items-start justify-between gap-3 mb-2">
@@ -542,9 +541,9 @@ const PromptDictionary = () => {
               </article>
               {/* In-feed ad after every 5 prompt cards */}
               {(idx + 1) % 5 === 0 && idx !== filtered.length - 1 && (
-                <AdSlot key={`ad-${idx}`} variant="in-feed" />
+                <AdSlot variant="in-feed" />
               )}
-              </>
+              </Fragment>
               );
             })}
 
